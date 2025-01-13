@@ -1,0 +1,63 @@
+blockchain: eth
+postgresql_enable_log: true
+
+postgresql:
+  data_center:
+    host: "localhost"
+    port: 5433
+    username: "postgres"
+    password: "postgres"
+    db: "data-center"
+  blockchain_fetcher:
+    host: "localhost"
+    port: 5433
+    username: "postgres"
+    password: "postgres"
+    db: "data-center"
+
+kafka:
+  data_center:
+    brokers:
+      - "localhost:9093"
+
+redis:
+  data_center:
+    host: "localhost"
+    port: 6380
+    password: ""
+    db: 0
+  data_farmer:
+    host: "localhost"
+    port: 6380
+    password: ""
+    cache_db: 1
+    data_db: 4
+
+# CoinMarketCap
+cmc:
+  api_key: local
+  rate_limit: 2
+
+streamtask:
+  transfer:
+    concurrency: 1
+  nft_metrics:
+    concurrency: 5
+  contract_metrics:
+    concurrency: 50
+  address_metrics:
+    concurrency: 50
+
+mongodb:
+  orderbook:
+    uri: "mongodb://127.0.0.1/orderbook?directConnection=true"
+    db: "orderbook"
+
+internal_service:
+  orderbook:
+    url: "http://127.0.0.1:4523/m1/2272262-0-default"
+elasticsearch:
+  data_farmer:
+    uri: "http://127.0.0.1:9200"
+    username: ""
+    password: ""
