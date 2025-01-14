@@ -30,6 +30,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
@@ -76,6 +77,8 @@ require (
 	github.com/panjf2000/ants v1.3.0
 	github.com/panjf2000/ants/v2 v2.11.0
 	github.com/prometheus/client_golang v1.20.5
+	github.com/samber/lo v1.47.0
+	github.com/segmentio/kafka-go v0.4.47
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/viper v1.19.0
 	github.com/streamingfast/logging v0.0.0-20230608130331-f22c91403091 // indirect

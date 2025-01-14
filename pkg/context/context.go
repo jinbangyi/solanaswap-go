@@ -10,6 +10,20 @@ import (
 // CtxKey 使用自定义类型，不用 string 避免与其他包的 context key 冲突
 type CtxKey string
 
+const (
+	ctxAppName  CtxKey = "app"
+	ctxFuncName CtxKey = "func"
+	ctxTaskName CtxKey = "task"
+	ctxTraceId  CtxKey = "traceId"
+)
+
+// var ctxKeyList = []ctxKey{
+// 	ctxAppName,
+// 	ctxFuncName,
+// 	ctxTaskName,
+// 	ctxTraceId,
+// }
+
 var ctxKeyList []CtxKey
 
 // SetCtxKeyList 设置 context key list, 通过 ValuesFromContext 返回 ctx 里面的 values, package log 里面会用到
@@ -68,4 +82,9 @@ func ValuesFromContext(ctx context.Context) (keys []string, valueMap map[string]
 	}
 
 	return keys, valueMap
+}
+
+func ContextWithTaskName(ctx context.Context, taskName string) context.Context {
+	ctx = context.WithValue(ctx, ctxTaskName, taskName)
+	return ctx
 }

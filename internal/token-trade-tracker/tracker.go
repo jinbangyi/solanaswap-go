@@ -35,7 +35,7 @@ import (
 // 	ChangeClientStrategy() error
 // }
 
-type Tracker interface {
+type TrackerI interface {
 	ReadTrade() (<-chan *Trade, error)
 	GetHttpClient() *rpc.Client
 	GetWsClient() *ws.Client
@@ -259,20 +259,21 @@ func (rtt *RealTimeTracker) GetTrade(logResult *ws.LogResult) (*Trade, error) {
 	// 	rtt.LogError("error marshalling swap data", err)
 	// 	return nil, err
 	// }
-	return &Trade{
-		SwapInfo: swapData,
-		Tracker:  rtt.String(),
-	}, nil
+	return NewTrade(rtt.String(), swapData, logResult.Context.Slot), nil
 }
 
 // -------------------------------- HistoryTracker --------------------------------
 
+// TODO ensure all transaction parsed and collect failed slot and transactions
 type HistoryTracker struct {
 	BaseTracker
 	startSlot uint64
 	endSlot   uint64
 
+	// show the process
 	currentSlot uint64
+	failedSlots []uint64
+	failedTx    []string
 }
 
 func NewHistoryTracker(
@@ -291,6 +292,8 @@ func NewHistoryTracker(
 		startSlot:   startSlot,
 		endSlot:     endSlot,
 		currentSlot: startSlot,
+		failedSlots: make([]uint64, 0),
+		failedTx:    make([]string, 0),
 	}
 
 	return tracker, nil
@@ -303,7 +306,7 @@ func (ht *HistoryTracker) WriteDataToChannel(currentSlot uint64, tradeChannel ch
 	ticker := time.NewTicker(time.Duration(sleepTime)*time.Second + processTimeout)
 	var rewards bool = false
 
-	OuterLoop:
+OuterLoop:
 	for {
 		select {
 		case <-ticker.C:
@@ -352,6 +355,7 @@ func (ht *HistoryTracker) WriteDataToChannel(currentSlot uint64, tradeChannel ch
 		}
 	}
 
+	log.Warn("failed transactions", zap.Any("failedTx", ht.failedTx))
 	ticker.Stop()
 	return nil
 }
@@ -410,7 +414,7 @@ func (ht *HistoryTracker) ReadTrade() (<-chan *Trade, error) {
 	return tradeChannel, nil
 }
 
-func (rtt *HistoryTracker) GetTrades(logResult *rpc.GetBlockResult) ([]*Trade, error) {
+func (ht *HistoryTracker) GetTrades(logResult *rpc.GetBlockResult) ([]*Trade, error) {
 	var trades []*Trade = make([]*Trade, 0)
 
 	for i, tx := range logResult.Transactions {
@@ -422,7 +426,8 @@ func (rtt *HistoryTracker) GetTrades(logResult *rpc.GetBlockResult) ([]*Trade, e
 
 		parsedTransaction, err := tx.GetTransaction()
 		if err != nil {
-			rtt.LogError("error getting transaction", err, zap.Uint64("slot", tx.Slot), zap.Int("index", i))
+			ht.LogError("error getting transaction", err, zap.Uint64("slot", tx.Slot), zap.Int("index", i))
+			ht.failedTx = append(ht.failedTx, logResult.Signatures[i].String())
 			continue
 		}
 
@@ -430,35 +435,39 @@ func (rtt *HistoryTracker) GetTrades(logResult *rpc.GetBlockResult) ([]*Trade, e
 
 		parser, err := tokentradeparser.NewTransactionParserFromTransaction(parsedTransaction, tx.Meta)
 		if err != nil {
-			rtt.LogError("error creating parser", err)
-			return nil, err
+			ht.LogError("error creating parser", err)
+			ht.failedTx = append(ht.failedTx, logResult.Signatures[i].String())
+			continue
 		}
 
 		transactionData, err := parser.ParseTransaction()
 		if err != nil {
-			rtt.LogError("error parsing transaction", err)
-			return nil, err
+			ht.LogError("error parsing transaction", err)
+			ht.failedTx = append(ht.failedTx, logResult.Signatures[i].String())
+			continue
 		}
 
 		// marshalledData, err := json.MarshalIndent(transactionData, "", "  ")
 		// if err != nil {
-		// 	rtt.LogError("error marshalling transaction data", err)
+		// 	ht.LogError("error marshalling transaction data", err)
 		// 	return nil, err
 		// }
 
 		swapData, err := parser.ProcessSwapData(transactionData)
 		if err != nil {
-			rtt.LogError("error processing swap data", err)
-			return nil, err
+			ht.LogError("error processing swap data", err)
+			ht.failedTx = append(ht.failedTx, logResult.Signatures[i].String())
+			continue
 		}
 
 		// marshalledSwapData, err := json.MarshalIndent(swapData, "", "  ")
 		// if err != nil {
-		// 	rtt.LogError("error marshalling swap data", err)
+		// 	ht.LogError("error marshalling swap data", err)
 		// 	return nil, err
 		// }
-		trades = append(trades, &Trade{
-			SwapInfo: &solanaswapgo.SwapInfo{
+		trades = append(trades, NewTrade(
+			ht.String(),
+			&solanaswapgo.SwapInfo{
 				Signers:    swapData.Signers,
 				Signatures: swapData.Signatures,
 				AMMs:       swapData.AMMs,
@@ -472,8 +481,8 @@ func (rtt *HistoryTracker) GetTrades(logResult *rpc.GetBlockResult) ([]*Trade, e
 				TokenOutAmount:   swapData.TokenOutAmount,
 				TokenOutDecimals: swapData.TokenOutDecimals,
 			},
-			Tracker: rtt.String(),
-		})
+			tx.Slot,
+		))
 	}
 
 	return trades, nil
