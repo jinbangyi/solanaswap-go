@@ -1,4 +1,4 @@
-package tokentradetracker
+package tracker
 
 import (
 	"context"
@@ -11,7 +11,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/jinbangyi/solanaswap-go/internal/token-trade-tracker/btype"
-	tokentradeparser "github.com/jinbangyi/solanaswap-go/pkg/token-trade-parser"
 )
 
 // -------------------------------- RealTimeTracker --------------------------------
@@ -116,20 +115,17 @@ func (rtt *RealTimeTracker) ParseTrade(ctx context.Context, logResult *ws.LogRes
 		return nil, fmt.Errorf("error getting tx: %w", err)
 	}
 
-	parser, err := tokentradeparser.NewTransactionParser(tx)
+	txInfo, err := tx.Transaction.GetTransaction()
 	if err != nil {
-		return nil, fmt.Errorf("error creating parser: %w", err)
+		return nil, fmt.Errorf("failed to get transaction: %w", err)
 	}
 
-	transactionData, err := parser.ParseTransaction()
-	if err != nil {
-		return nil, fmt.Errorf("error parsing transaction: %w", err)
-	}
-
-	swapData, err := parser.ProcessSwapData(transactionData)
-	if err != nil {
-		return nil, fmt.Errorf("error processing swap data: %w", err)
-	}
-
-	return btype.NewTrade(rtt.String(), swapData, logResult.Context.Slot), nil
+	return rtt.parseTrade(
+		ctx,
+		rpc.TransactionParsed{
+			Transaction: txInfo,
+			Meta:        tx.Meta,
+		},
+		logResult.Context.Slot,
+	)
 }

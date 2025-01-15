@@ -94,10 +94,11 @@ func NewProducer(topic string, brokers []string, optFuncs ...ProducerOption) *Pr
 			// BatchSize:       1000,
 			BatchTimeout:    10 * time.Second,
 			RequiredAcks:    kafka.RequireOne,
+			AllowAutoTopicCreation: true,
 		},
 
-		numPartitions:     3,
-		replicationFactor: 3,
+		numPartitions:     1,
+		replicationFactor: 1,
 		cacheMessage:      make([]any, 500),
 		cacheLimit:        500,
 	}

@@ -1,4 +1,4 @@
-package tokentradetracker
+package tracker
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"github.com/gagliardetto/solana-go/rpc"
 	"github.com/gagliardetto/solana-go/rpc/ws"
 	"github.com/jinbangyi/solanaswap-go/pkg/log"
+	tokentradeparser "github.com/jinbangyi/solanaswap-go/pkg/token-trade-parser"
 	"go.uber.org/zap"
 
 	"github.com/jinbangyi/solanaswap-go/internal/token-trade-tracker/btype"
@@ -134,19 +135,19 @@ func (bt *BaseTracker) LogError(message string, err error, fields ...zap.Field) 
 func (bt *BaseTracker) LogWarn(message string, fields ...zap.Field) {
 	fields = append(fields, zap.String("Tracker", bt.String()))
 	fields = append(fields, zap.Int("SleepTime", bt.retrySleepTime))
-	log.Error(message, fields...)
+	log.Warn(message, fields...)
 }
 
 func (bt *BaseTracker) LogInfo(message string, fields ...zap.Field) {
 	fields = append(fields, zap.String("Tracker", bt.String()))
 	fields = append(fields, zap.Int("SleepTime", bt.retrySleepTime))
-	log.Error(message, fields...)
+	log.Info(message, fields...)
 }
 
 func (bt *BaseTracker) LogDebug(message string, fields ...zap.Field) {
 	fields = append(fields, zap.String("Tracker", bt.String()))
 	fields = append(fields, zap.Int("SleepTime", bt.retrySleepTime))
-	log.Error(message, fields...)
+	log.Debug(message, fields...)
 }
 
 func (bt *BaseTracker) String() string {
@@ -209,4 +210,24 @@ func (bt *BaseTracker) Close() error {
 	bt.wsClient.Close()
 
 	return bt.rpcClient.Close()
+}
+
+func (bt *BaseTracker) parseTrade(ctx context.Context, transaction rpc.TransactionParsed, slot uint64) (*btype.Trade, error) {
+	parser, err := tokentradeparser.NewTransactionParserFromTransaction(transaction.Transaction, transaction.Meta)
+	if err != nil {
+		return nil, fmt.Errorf("error creating parser: %w", err)
+	}
+
+	transactionData, err := parser.ParseTransaction()
+	if err != nil {
+		return nil, fmt.Errorf("error parsing transaction: %w", err)
+	}
+
+	swapData, err := parser.ProcessSwapData(transactionData)
+	if err != nil {
+		return nil, fmt.Errorf("error processing swap data: %w", err)
+	}
+
+	// TODO the string func using parent or inherited struct
+	return btype.NewTrade(bt.String(), swapData, slot), nil
 }

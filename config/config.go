@@ -9,11 +9,11 @@ import (
 var (
 	HTTP_ADDR      = ":8080"
 
-	PG_BLOCKCHAIN_FETCHER_HOST     = config.GetStringMust("postgresql.blockchain_fetcher.host")
-	PG_BLOCKCHAIN_FETCHER_USER     = config.GetStringMust("postgresql.blockchain_fetcher.username")
-	PG_BLOCKCHAIN_FETCHER_PORT     = config.GetIntMust("postgresql.blockchain_fetcher.port")
-	PG_BLOCKCHAIN_FETCHER_PASSWORD = config.GetStringMust("postgresql.blockchain_fetcher.password")
-	PG_BLOCKCHAIN_FETCHER_DATABASE = config.GetStringMust("postgresql.blockchain_fetcher.db")
+	// PG_BLOCKCHAIN_FETCHER_HOST     = config.GetStringMust("postgresql.blockchain_fetcher.host")
+	// PG_BLOCKCHAIN_FETCHER_USER     = config.GetStringMust("postgresql.blockchain_fetcher.username")
+	// PG_BLOCKCHAIN_FETCHER_PORT     = config.GetIntMust("postgresql.blockchain_fetcher.port")
+	// PG_BLOCKCHAIN_FETCHER_PASSWORD = config.GetStringMust("postgresql.blockchain_fetcher.password")
+	// PG_BLOCKCHAIN_FETCHER_DATABASE = config.GetStringMust("postgresql.blockchain_fetcher.db")
 
 	KAFKA_BROKERS           = getStringSliceConfig("kafka.default.brokers")
 )
