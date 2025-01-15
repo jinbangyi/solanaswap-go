@@ -1,16 +1,15 @@
-package tokentradetracker
+package btype
 
 import (
-	solanaswapgo "github.com/franco-bianco/solanaswap-go/solanaswap-go"
-
-	bkafka "github.com/jinbangyi/solanaswap-go/pkg/kafka"
+	tokentradeparser "github.com/jinbangyi/solanaswap-go/pkg/token-trade-parser"
 )
 
 type SwapInfo struct {
 	Signers    []string `json:"signers"`
 	Signatures []string `json:"signatures"`
 	AMMs       []string `json:"AMMs"`
-	Timestamp  int64    `json:"timestamp"`
+	// milliseconds
+	Timestamp int64 `json:"timestamp"`
 
 	TokenInMint     string `json:"tokenInMint"`
 	TokenInAmount   uint64 `json:"tokenInAmount"`
@@ -26,10 +25,10 @@ type Trade struct {
 	SwapInfo *SwapInfo `json:"swapInfo"`
 	// tracker's name
 	Tracker string `json:"tracker"`
-	Slot   uint64 `json:"slot"`
+	Slot    uint64 `json:"slot"`
 }
 
-func NewTrade(trackerName string, swapInfo *solanaswapgo.SwapInfo, slot uint64) *Trade {
+func NewTrade(trackerName string, swapInfo *tokentradeparser.SwapInfo, slot uint64) *Trade {
 	signers := make([]string, len(swapInfo.Signers))
 	for i, signer := range swapInfo.Signers {
 		signers[i] = signer.String()
@@ -55,21 +54,5 @@ func NewTrade(trackerName string, swapInfo *solanaswapgo.SwapInfo, slot uint64) 
 		},
 		Tracker: trackerName,
 		Slot:    slot,
-	}
-}
-
-const (
-	SolanaTradeTopic = "solana-trade"
-)
-
-// CollectionContractEvent 合约和 collection 关系变更事件
-type TradeEvent struct {
-	bkafka.EventBase
-	Trade *Trade `json:"trade"`
-}
-
-func (te TradeEvent) GetConsumers() []bkafka.ConsumerTopicPartition {
-	return []bkafka.ConsumerTopicPartition{
-		{Topic: SolanaTradeTopic, PartitionKey: ""},
 	}
 }

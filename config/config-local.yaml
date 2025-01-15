@@ -16,7 +16,7 @@ postgresql:
     db: "data-center"
 
 kafka:
-  data_center:
+  default:
     brokers:
       - "localhost:9093"
 

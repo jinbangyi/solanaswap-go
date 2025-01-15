@@ -32,11 +32,19 @@
 Roles:
 
 - Client: 解决 ratelimit、rpc node 不稳定问题。自动切换新的 endpoint，自动添加 proxy，自动变更 useragent，自动变更 apikey 等
-- Tracker: 从链上解析出 trades
-- Handler: 对解析出的 trades 做处理
+- Tracker: outpust is trades
+- Handler: input is trades
   - 直接发往 kafka
   - 添加一些新的字段
   - 过滤部分 trades
   - ...
 - Dispatcher: 保证 trades 全部被正确处理，记录进度，当程序重启的时候能从指定进度启动
-  - Job Management: 
+  - Job Management:
+
+    - read trades of a slot and send the trades to kafka, if failed then retry. the job will complete
+    - read trade event and send the trade to kafka. the job will not complete, but can get progress
+  - Task Management:
+    - get a token's history trade and real-time trades.
+      - get the token's history trade
+      - get the token's real-time trade
+      - if the progress restarted, get the recent history trades and get the real-time trade

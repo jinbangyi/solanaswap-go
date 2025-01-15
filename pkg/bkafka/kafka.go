@@ -2,7 +2,6 @@ package bkafka
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -14,50 +13,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 )
-
-type IKafkaWriter interface {
-	WriteMessages(ctx context.Context, msgs []any) error
-	CloseConn(ctx context.Context) error
-}
-
-type KafkaWriter struct {
-	writer *kafka.Writer
-}
-
-func NewKafkaWriterWithBrokers(topic string, brokers []string) IKafkaWriter {
-	return &KafkaWriter{
-		writer: &kafka.Writer{
-			Addr:     kafka.TCP(brokers...),
-			Topic:    topic,
-			Balancer: &kafka.LeastBytes{},
-		},
-	}
-}
-
-func (k KafkaWriter) WriteMessages(ctx context.Context, msgs []any) error {
-	messages := make([]kafka.Message, 0)
-
-	for _, msg := range msgs {
-		msgJson, err := json.Marshal(msg)
-		if err != nil {
-			log.Warn("---> Construct Message error:", zap.Error(err))
-			return err
-		}
-		messages = append(messages, kafka.Message{
-			Value: msgJson,
-		})
-	}
-
-	if err := k.writer.WriteMessages(ctx, messages...); err != nil {
-		log.Warn("---> Write Message error:", zap.Error(err))
-		return err
-	}
-	return nil
-}
-
-func (k KafkaWriter) CloseConn(ctx context.Context) error {
-	return k.writer.Close()
-}
 
 type IKafkaConsumer interface {
 	// KafkaReaderConfig 配置 topic groupId brokers 等
@@ -73,9 +28,7 @@ func NewDaemonTaskWithKafkaConsumer(ctx context.Context, wg *sync.WaitGroup, con
 	)
 
 	return task.NewDaemon(ctx, TaskName, func(ctx context.Context) error {
-		var (
-			r = kafka.NewReader(consumer.KafkaReaderConfig())
-		)
+		r := kafka.NewReader(consumer.KafkaReaderConfig())
 
 		defer func() {
 			if err := r.Close(); err != nil {
