@@ -1,6 +1,9 @@
 package btype
 
 import (
+	"encoding/json"
+	"fmt"
+
 	tokentradeparser "github.com/jinbangyi/solanaswap-go/pkg/token-trade-parser"
 )
 
@@ -26,6 +29,14 @@ type Trade struct {
 	// tracker's name
 	Tracker string `json:"tracker"`
 	Slot    uint64 `json:"slot"`
+}
+
+func (t *Trade) Json() ([]byte, error) {
+	if t == nil {
+        return nil, fmt.Errorf("Trade struct is nil")
+    }
+
+	return json.Marshal(t)
 }
 
 func NewTrade(trackerName string, swapInfo *tokentradeparser.SwapInfo, slot uint64) *Trade {

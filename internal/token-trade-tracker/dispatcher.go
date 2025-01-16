@@ -1,5 +1,7 @@
 package tokentradetracker
 
+import "log"
+
 func WatchLatestTrade(tokenAddress string) {
 	// tokenAddress := "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"
 	httpEndpoint := []string{"https://mainnet.helius-rpc.com/?api-key=6bfb79c3-fd6e-4a61-bae2-a097f611fa3a"}
@@ -14,4 +16,6 @@ func WatchLatestTrade(tokenAddress string) {
 	if err != nil {
 		panic(err)
 	}
+
+	log.Fatal("WatchLatestTrade done")
 }

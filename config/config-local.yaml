@@ -2,12 +2,12 @@
 kafka:
   default:
     brokers:
-      - "172.17.0.1:9092"
+      # - "172.17.0.1:9092"
+      - "localhost:8092"
 
 redis:
   data_farmer:
     host: "localhost"
-    port: 6380
+    port: 6379
     password: ""
-    cache_db: 1
-    data_db: 4
+    db: 1

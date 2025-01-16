@@ -6,6 +6,8 @@ import (
 
 	"github.com/jinbangyi/solanaswap-go/internal/token-trade-tracker/handler"
 	"github.com/jinbangyi/solanaswap-go/internal/token-trade-tracker/tracker"
+	"github.com/jinbangyi/solanaswap-go/pkg/log"
+	"go.uber.org/zap"
 )
 
 type GetLatestTradeJob struct {
@@ -41,6 +43,8 @@ func (job *GetLatestTradeJob) Run() error {
 	// job.KafkaHandler.WriteTrade()
 
 	for trade := range tradeChannel {
+		log.Debug("trade", zap.Uint64("slot", trade.Slot), zap.String("hash", trade.SwapInfo.Signatures[0]))
+		// TODO 
 		err := job.KafkaHandler.WriteTrade(ctx, trade)
 		if err != nil {
 			return fmt.Errorf("failed to write trade: %w", err)

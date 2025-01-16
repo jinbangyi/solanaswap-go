@@ -33,6 +33,7 @@ func NewRealTimeTracker(httpEndpoint []string, wsEndpoint []string, tokenAddress
 
 	// read all trades
 	if baseTracker.tokenAddress == "" {
+		// TODO change to baseTracker.wsClient.ParsedBlockSubscribe()
 		logSubscribe, err = baseTracker.wsClient.LogsSubscribe(
 			ws.LogsSubscribeFilterAll,
 			rpc.CommitmentConfirmed,
@@ -58,8 +59,6 @@ func NewRealTimeTracker(httpEndpoint []string, wsEndpoint []string, tokenAddress
 }
 
 func (rtt *RealTimeTracker) run() error {
-	rtt.LogInfo("start listening for trades: ")
-
 	logResult, err := rtt.logSubscribe.Recv(context.Background())
 	if err != nil {
 		// TODO if network issue, change the client
@@ -71,13 +70,15 @@ func (rtt *RealTimeTracker) run() error {
 	if logResult.Value.Err != nil {
 		rtt.LogDebug("transaction error", zap.String("hash", logResult.Value.Signature.String()), zap.Any("error", logResult.Value.Err))
 		// ignore the failed transaction
+		return nil
 	}
 
 	trade, err := rtt.ParseTrade(context.Background(), logResult)
 	if err != nil {
 		// TODO full reparse the slot
-		rtt.LogError("get trade from logs error", err, zap.Uint64("slot", logResult.Context.Slot))
+		rtt.LogError("ParseTrade failed", err, zap.Uint64("slot", logResult.Context.Slot))
 		// parse the log result failed
+		return nil
 	}
 
 	// write to channel
@@ -88,6 +89,8 @@ func (rtt *RealTimeTracker) run() error {
 
 func (rtt *RealTimeTracker) ReadTrade(ctx context.Context) (<-chan *btype.Trade, error) {
 	go func() {
+		rtt.LogInfo("start listening for trades: ")
+
 		err := rtt.FuncTimeoutAndContextDoneWrapper(ctx, time.Duration(5*time.Second), rtt.run)
 		if err != nil {
 			rtt.LogError("run error", err)

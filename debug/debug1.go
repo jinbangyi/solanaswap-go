@@ -59,3 +59,6 @@ func main() {
 	tokenAddress := "HeLp6NuQkmYB4pYWo2zYs22mESHXPQYzXbB8n4V98jwC"
 	tokentradetracker.WatchLatestTrade(tokenAddress)
 }
+
+
+// go run debug/debug1.go | tee logs/debug1.log

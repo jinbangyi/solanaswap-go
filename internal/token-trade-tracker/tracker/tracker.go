@@ -77,26 +77,40 @@ func (bt *BaseTracker) FuncTimeoutAndContextDoneWrapper(
 	ticker := time.NewTicker(tickerLoop)
 	defer ticker.Stop()
 
+	count := 0
+	lastCount := count
+
 	for {
+		var err error
+
 		select {
 		case <-ctx.Done():
 			bt.LogInfo("context done")
 			return ctx.Err()
 		case <-ticker.C:
-			bt.LogWarn("Tracker progress timeout")
+			// function timeout or is sleeping
+			if count == lastCount {
+				if bt.isSleeping() {
+					bt.LogDebug("Tracker is sleeping")
+				} else {
+					bt.LogWarn("Tracker progress timeout")
+				}
+			} else {
+				lastCount = count
+			}
 		default:
-			if err := fn(); err != nil {
+			if err = fn(); err != nil {
 				bt.LogError("function execution error", err)
-
-				// sleep and retry
-				ticker.Reset(tickerLoop + time.Duration(bt.retrySleepTime)*time.Second)
-				bt.RetrySleep(err)
 			}
 
-			bt.RetrySleep(nil)
-			ticker.Reset(tickerLoop)
+			count += 1
+			bt.RetrySleep(err)
 		}
 	}
+}
+
+func (bt *BaseTracker) isSleeping() bool {
+	return bt.retrySleepTime > bt.retryInitSleepTime
 }
 
 // give me a func, and the func will return a error, if error is nil, reset retry time else retry
@@ -109,7 +123,7 @@ func (bt *BaseTracker) RetrySleep(err error) error {
 	}
 	// if max retry reached, return error
 	if bt.currentRetry >= bt.maxRetry {
-		return fmt.Errorf("max retry reached")
+		bt.LogWarn("max retry reached")
 	}
 
 	bt.currentRetry++
@@ -178,7 +192,7 @@ func NewBaseTracker(httpEndpoint []string, wsEndpoint []string, tokenAddress str
 		return nil, fmt.Errorf("httpEndpoint and wsEndpoint must not be empty")
 	}
 
-	channelBufferSize := 1000
+	channelBufferSize := 1
 
 	tracker := &BaseTracker{
 		httpEndpoint:       httpEndpoint,

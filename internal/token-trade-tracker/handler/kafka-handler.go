@@ -40,7 +40,11 @@ func (kh *KafkaHandler) String() string {
 }
 
 func (kh *KafkaHandler) WriteTrade(context context.Context, trade *btype.Trade) error {
-	return kh.producer.WriteMessage(context, trade)
+	_json, err := trade.Json()
+	if err != nil {
+		return err
+	}
+	return kh.producer.WriteMessage(context, _json)
 }
 
 func (kh *KafkaHandler) Close(context context.Context) error {
